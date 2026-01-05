@@ -1,5 +1,5 @@
 """Pydantic schemas for request/response validation."""
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -51,7 +51,8 @@ class SummarizeRequest(BaseModel):
     type: SummaryType = SummaryType.DOCUMENT
     style: SummaryStyle = SummaryStyle.BRIEF
     
-    @validator('text')
+    @field_validator('text')
+    @classmethod
     def validate_text(cls, v):
         """Validate text is not empty after stripping."""
         if not v.strip():
@@ -61,11 +62,12 @@ class SummarizeRequest(BaseModel):
 
 class BatchSummarizeRequest(BaseModel):
     """Batch summarization request."""
-    texts: List[str] = Field(min_items=1, max_items=10)
+    texts: List[str] = Field(min_length=1, max_length=10)
     type: SummaryType = SummaryType.DOCUMENT
     style: SummaryStyle = SummaryStyle.BRIEF
     
-    @validator('texts')
+    @field_validator('texts')
+    @classmethod
     def validate_texts(cls, v):
         """Validate all texts meet requirements."""
         for text in v:
@@ -86,14 +88,13 @@ class SummaryMetrics(BaseModel):
 
 class SummaryResponse(BaseModel):
     """Summary response schema."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     summary: str
     key_points: List[str]
     metrics: SummaryMetrics
     created_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 
 class BatchSummaryResponse(BaseModel):
@@ -105,14 +106,13 @@ class BatchSummaryResponse(BaseModel):
 
 class SummaryListResponse(BaseModel):
     """Summary list response schema."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     type: str
     style: str
     summary: str
     created_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 
 class UsageStats(BaseModel):

@@ -2,7 +2,7 @@
 from typing import TypedDict, List
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 import re
 
 from app.config import settings
@@ -35,8 +35,18 @@ def preprocess_node(state: SummaryState) -> SummaryState:
     summary_type = state["summary_type"]
     
     if summary_type == "email":
-        # Remove email metadata
-        text = re.sub(r'^(From|To|Subject|Date):.*$', '', text, flags=re.MULTILINE)
+        # Remove email metadata - handle lines starting with common email headers
+        lines = text.split('\n')
+        filtered_lines = []
+        for line in lines:
+            # Skip lines that start with common email headers (case insensitive)
+            line_lower = line.lower().strip()
+            if not (line_lower.startswith('from:') or 
+                    line_lower.startswith('to:') or 
+                    line_lower.startswith('subject:') or 
+                    line_lower.startswith('date:')):
+                filtered_lines.append(line)
+        text = '\n'.join(filtered_lines)
         text = re.sub(r'<[^>]+>', '', text)  # Remove HTML tags
     elif summary_type == "chat":
         # Remove timestamps
